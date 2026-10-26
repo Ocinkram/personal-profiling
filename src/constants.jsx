@@ -1,37 +1,21 @@
-// Change these values once to use a different account or API key everywhere.
-// export const AID = 'YWNjb3VudF83MzI5'
-export const AID = 'YWNjb3VudF83NjYx'
-
-export const API_KEY = 'tJ1ROscurb83mqyY4B0To5WTb4ekFzMa8LgGKoZh'
-
-const ENV = 'dev' //sb, prod
-
-const API_ORIGIN = 'https://tpdjwm06fj.execute-api.ap-southeast-1.amazonaws.com'
-
-export const API_HEADERS = {
-  'x-api-key': API_KEY,
+/** Builds a profile API client from configuration supplied by the package host. */
+export function createProfileApiClient({ AID, API_KEY, ENV = 'dev', API_ORIGIN, fetchImpl = fetch } = {}) {
+  const origin = API_ORIGIN?.replace(/\/$/, '')
+  const apiBase = origin && ENV ? `${origin}/api/global/rqx/${ENV}/primeinfo` : null
+  const localBase = origin && ENV ? `${origin}/local/global/rqx/${ENV}` : null
+  const headers = API_KEY ? { 'x-api-key': API_KEY } : {}
+  const save = (url, payload) => fetchImpl(url, { method: 'POST', mode: 'cors', credentials: 'omit', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+  return {
+    aid: AID,
+    headers,
+    readAccountUrl: localBase && AID ? `${localBase}/account/read?aid=${encodeURIComponent(AID)}` : null,
+    readProfileUrl: apiBase && AID ? `${apiBase}/read?aid=${encodeURIComponent(AID)}` : null,
+    create: (payload) => save(`${localBase}/primeinfo/create`, payload),
+    update: (payload) => save(`${localBase}/primeinfo/update`, payload),
+  }
 }
 
-export const READ_AINFO = `${API_ORIGIN}/local/global/rqx/${ENV}/account/read?aid=${AID}`
-export const READ_PINFO = `${API_ORIGIN}/api/global/rqx/${ENV}/primeinfo/read?aid=${AID}`
-export const CREATE_API = `${API_ORIGIN}/local/global/rqx/${ENV}/primeinfo/create`
-export const UPDATE_API = `${API_ORIGIN}/local/global/rqx/${ENV}/primeinfo/update`
-
-function saveProfile(url, payload) {
-
-  console.log(payload)
-
-  return fetch(url, {
-    method: 'POST',
-    mode: 'cors',
-    credentials: 'omit',
-    headers: {
-      ...API_HEADERS,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  })
+export function validateProfileConfig({ AID, API_KEY, ENV, API_ORIGIN } = {}) {
+  const missing = [['AID', AID], ['API_KEY', API_KEY], ['ENV', ENV], ['API_ORIGIN', API_ORIGIN]].filter(([, value]) => !value).map(([name]) => name)
+  return missing.length ? `Missing required profile configuration: ${missing.join(', ')}.` : null
 }
-
-export const createFetch = (payload) => saveProfile(CREATE_API, payload)
-export const updateFetch = (payload) => saveProfile(UPDATE_API, payload)

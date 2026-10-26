@@ -1,4 +1,27 @@
-# React + Vite
+# personal-profiling
+
+Reusable React profile form for the RQX profile API.
+
+## Install
+
+```bash
+npm install personal-profiling
+```
+
+## Use
+
+```jsx
+import { ProfileForm } from 'personal-profiling'
+
+<ProfileForm
+  AID={import.meta.env.VITE_AID}
+  API_KEY={import.meta.env.VITE_API_KEY}
+  ENV="dev"
+  API_ORIGIN="https://your-api-origin.example.com"
+/>
+```
+
+`AID`, `API_KEY`, `ENV`, and `API_ORIGIN` are supplied by the host. `ENV` defaults to `dev`; `onSaved` and `onError` callbacks are optional. Choose an available (ideally scoped) package name in `package.json` before `npm publish --access public`.
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 

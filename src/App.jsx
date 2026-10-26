@@ -1,29 +1,31 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Avatar, Box, Button, CssBaseline, IconButton, Paper, TextField, ThemeProvider, Typography, createTheme } from '@mui/material'
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined'
 import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined'
-import { AID, API_HEADERS, createFetch, READ_AINFO, READ_PINFO, updateFetch } from './constants.jsx'
+import { createProfileApiClient, validateProfileConfig } from './constants.jsx'
 
 const theme = createTheme({ palette: { primary: { main: '#286dc7' }, text: { primary: '#142343' } }, typography: { fontFamily: 'Inter, Arial, sans-serif' } })
 
-function App() {
+function App({ AID, API_KEY, ENV = 'dev', API_ORIGIN, onSaved, onError }) {
   const [profileInfo, setProfileInfo] = useState(null)
-  const [, setAccountInfo] = useState(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const inputRef = useRef(null)
+  const configError = validateProfileConfig({ AID, API_KEY, ENV, API_ORIGIN })
+  const client = useMemo(() => createProfileApiClient({ AID, API_KEY, ENV, API_ORIGIN }), [AID, API_KEY, ENV, API_ORIGIN])
 
   useEffect(() => {
+    if (configError) return undefined
     const controller = new AbortController()
 
     async function readProfileInfo() {
       try {
-        const response = await fetch(READ_PINFO, {
+        const response = await fetch(client.readProfileUrl, {
           signal: controller.signal,
-          headers: API_HEADERS,
+          headers: client.headers,
         })
 
         if (!response.ok) {
@@ -39,34 +41,16 @@ function App() {
       } catch (error) {
         if (error.name !== 'AbortError') {
           console.error('Failed to read profile information:', error)
-        }
-      }
-    }
-
-    async function readAccountInfo() {
-      try {
-        const response = await fetch(READ_AINFO, {
-          signal: controller.signal,
-          headers: API_HEADERS,
-        })
-
-        if (!response.ok) {
-          throw new Error(`Unable to read account information (${response.status})`)
-        }
-
-        setAccountInfo(await response.json())
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('Failed to read account information:', error)
+          setSubmitError(error.message)
+          onError?.(error)
         }
       }
     }
 
     readProfileInfo()
-    readAccountInfo()
 
     return () => controller.abort()
-  }, [])
+  }, [client, configError, onError])
 
   const hasProfile = Array.isArray(profileInfo) && profileInfo.length > 0
 
@@ -83,6 +67,10 @@ function App() {
 
   async function handleSubmit(event) {
     event.preventDefault()
+    if (configError) {
+      setSubmitError(configError)
+      return
+    }
     const payload = {
       aid: AID,
       contact_info: {},
@@ -99,15 +87,17 @@ function App() {
     setSubmitError('')
 
     try {
-      const response = await (hasProfile ? updateFetch(payload) : createFetch(payload))
+      const response = await (hasProfile ? client.update(payload) : client.create(payload))
 
       if (!response.ok) {
         throw new Error(`Unable to save profile (${response.status})`)
       }
 
       setProfileInfo([{ ...payload }])
+      onSaved?.(payload)
     } catch (error) {
       setSubmitError(error.message)
+      onError?.(error)
     } finally {
       setIsSubmitting(false)
     }
@@ -128,8 +118,8 @@ function App() {
           </Box>
           <Box><Typography component="label" htmlFor="firstName" sx={{ display: 'block', mb: 1, color: '#284464', fontSize: 14, lineHeight: '20px', fontWeight: 700, '& span': { color: '#df5260' } }}>First name <Box component="span">*</Box></Typography><TextField id="firstName" name="firstName" placeholder="Enter your first name" value={firstName} onChange={(event) => setFirstName(event.target.value)} required fullWidth sx={{ '& .MuiOutlinedInput-root': { height: 56, borderRadius: '12px', color: '#284464', fontSize: 14, '& fieldset': { borderColor: '#d8e2ef' }, '&:hover fieldset': { borderColor: '#aabed7' }, '&.Mui-focused fieldset': { borderWidth: '1.5px', borderColor: '#286dc7' } }, '& input::placeholder': { color: '#acbcd0', opacity: 1 } }} /></Box>
           <Box sx={{ mt: '20px' }}><Typography component="label" htmlFor="lastName" sx={{ display: 'block', mb: 1, color: '#284464', fontSize: 14, lineHeight: '20px', fontWeight: 700, '& span': { color: '#df5260' } }}>Last name <Box component="span">*</Box></Typography><TextField id="lastName" name="lastName" placeholder="Enter your last name" value={lastName} onChange={(event) => setLastName(event.target.value)} required fullWidth sx={{ '& .MuiOutlinedInput-root': { height: 56, borderRadius: '12px', color: '#284464', fontSize: 14, '& fieldset': { borderColor: '#d8e2ef' }, '&:hover fieldset': { borderColor: '#aabed7' }, '&.Mui-focused fieldset': { borderWidth: '1.5px', borderColor: '#286dc7' } }, '& input::placeholder': { color: '#acbcd0', opacity: 1 } }} /></Box>
-          {submitError && <Typography role="alert" sx={{ mt: 2, mb: '-16px', color: '#bd2633', fontSize: 14, lineHeight: '20px' }}>{submitError}</Typography>}
-          <Button type="submit" variant="contained" disabled={isSubmitting} fullWidth sx={{ height: 56, mt: '32px', borderRadius: '12px', bgcolor: '#286dc7', boxShadow: '0 9px 16px rgba(40, 109, 199, .2)', fontSize: 14, lineHeight: '20px', fontWeight: 700, textTransform: 'none', '&:hover': { bgcolor: '#1e5fae' } }}>{isSubmitting ? 'Saving...' : 'Save & Continue →'}</Button>
+          {(submitError || configError) && <Typography role="alert" sx={{ mt: 2, mb: '-16px', color: '#bd2633', fontSize: 14, lineHeight: '20px' }}>{submitError || configError}</Typography>}
+          <Button type="submit" variant="contained" disabled={isSubmitting || Boolean(configError)} fullWidth sx={{ height: 56, mt: '32px', borderRadius: '12px', bgcolor: '#286dc7', boxShadow: '0 9px 16px rgba(40, 109, 199, .2)', fontSize: 14, lineHeight: '20px', fontWeight: 700, textTransform: 'none', '&:hover': { bgcolor: '#1e5fae' } }}>{isSubmitting ? 'Saving...' : 'Save & Continue →'}</Button>
         </Box>
       </Paper>
     </Box>
@@ -137,3 +127,4 @@ function App() {
 }
 
 export default App
+export { App as ProfileForm }
