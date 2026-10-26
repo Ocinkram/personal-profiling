@@ -11,11 +11,11 @@ const API_ORIGIN = 'https://tpdjwm06fj.execute-api.ap-southeast-1.amazonaws.com'
 export const API_HEADERS = {
   'x-api-key': API_KEY,
 }
-  
-export const READ_AINFO = `${API_ORIGIN}/local/global/rqx/dev/account/read?aid=${AID}`
-export const READ_PINFO = `${API_ORIGIN}/api/global/rqx/dev/primeinfo/read?aid=${AID}`
-export const CREATE_API = `${API_ORIGIN}/local/global/rqx/dev/primeinfo/create`
-export const UPDATE_API = `${API_ORIGIN}/local/global/rqx/dev/primeinfo/update`
+
+export const READ_AINFO = `${API_ORIGIN}/local/global/rqx/${ENV}/account/read?aid=${AID}`
+export const READ_PINFO = `${API_ORIGIN}/api/global/rqx/${ENV}/primeinfo/read?aid=${AID}`
+export const CREATE_API = `${API_ORIGIN}/local/global/rqx/${ENV}/primeinfo/create`
+export const UPDATE_API = `${API_ORIGIN}/local/global/rqx/${ENV}/primeinfo/update`
 
 function saveProfile(url, payload) {
 
