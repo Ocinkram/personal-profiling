@@ -14,14 +14,14 @@ npm install personal-profiling
 import { ProfileForm } from 'personal-profiling'
 
 <ProfileForm
-  AID={import.meta.env.VITE_AID}
-  API_KEY={import.meta.env.VITE_API_KEY}
-  ENV="dev"
-  API_ORIGIN="https://your-api-origin.example.com"
+  aid={import.meta.env.VITE_AID}
+  apiKey={import.meta.env.VITE_API_KEY}
+  env="dev"
+  apiOrigin="https://your-api-origin.example.com"
 />
 ```
 
-`AID`, `API_KEY`, `ENV`, and `API_ORIGIN` are supplied by the host. `ENV` defaults to `dev`; `onSaved` and `onError` callbacks are optional. Choose an available (ideally scoped) package name in `package.json` before `npm publish --access public`.
+`aid`, `apiKey`, `env`, and `apiOrigin` are supplied by the host. `env` defaults to `dev`; `onSaved` and `onError` callbacks are optional. Choose an available (ideally scoped) package name in `package.json` before `npm publish --access public`.
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 

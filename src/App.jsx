@@ -1,25 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Avatar, Box, Button, CssBaseline, IconButton, Paper, TextField, ThemeProvider, Typography, createTheme } from '@mui/material'
+import { Avatar, Box, Button, CssBaseline, IconButton, Modal, Paper, TextField, ThemeProvider, Typography, createTheme } from '@mui/material'
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined'
 import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined'
 import { createProfileApiClient, validateProfileConfig } from './constants.jsx'
 
 const theme = createTheme({ palette: { primary: { main: '#286dc7' }, text: { primary: '#142343' } }, typography: { fontFamily: 'Inter, Arial, sans-serif' } })
 
-function App({ AID, API_KEY, ENV = 'dev', API_ORIGIN, onSaved, onError }) {
+function App({ aid, apiKey, env = 'dev', apiOrigin, onSaved, onError, isOpen = true, isRequired = false }) {
   const [profileInfo, setProfileInfo] = useState(null)
+  const [isReadComplete, setIsReadComplete] = useState(false)
+  const [hasReadResult, setHasReadResult] = useState(false)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const inputRef = useRef(null)
-  const configError = validateProfileConfig({ AID, API_KEY, ENV, API_ORIGIN })
-  const client = useMemo(() => createProfileApiClient({ AID, API_KEY, ENV, API_ORIGIN }), [AID, API_KEY, ENV, API_ORIGIN])
+  const configError = validateProfileConfig({ AID: aid, API_KEY: apiKey, ENV: env, API_ORIGIN: apiOrigin })
+  const client = useMemo(() => createProfileApiClient({ AID: aid, API_KEY: apiKey, ENV: env, API_ORIGIN: apiOrigin }), [aid, apiKey, env, apiOrigin])
 
   useEffect(() => {
     if (configError) return undefined
     const controller = new AbortController()
+    setIsReadComplete(false)
+    setHasReadResult(false)
 
     async function readProfileInfo() {
       try {
@@ -35,24 +39,32 @@ function App({ AID, API_KEY, ENV = 'dev', API_ORIGIN, onSaved, onError }) {
         const profiles = await response.json()
         const profile = Array.isArray(profiles) ? profiles[0] : null
 
+        if (!profile) return
+
         setProfileInfo(profiles)
+        setHasReadResult(true)
         setFirstName(profile?.first_name ?? '')
         setLastName(profile?.last_name ?? '')
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('Failed to read profile information:', error)
-          setSubmitError(error.message)
-          onError?.(error)
-        }
+      } catch {
+        // A failed or malformed profile read should not display the form.
+      } finally {
+        if (!controller.signal.aborted) setIsReadComplete(true)
       }
     }
 
     readProfileInfo()
 
     return () => controller.abort()
-  }, [client, configError, onError])
+  }, [client, configError])
 
   const hasProfile = Array.isArray(profileInfo) && profileInfo.length > 0
+  const hasRequiredEmptyName = isRequired
+    && profileInfo !== null
+    && firstName.trim() === ''
+    && lastName.trim() === ''
+  const shouldShowModal = isOpen || hasRequiredEmptyName
+
+  if (!configError && (!isReadComplete || !hasReadResult)) return null
 
   function handlePhotoChange(event) {
     const [file] = event.target.files
@@ -72,7 +84,7 @@ function App({ AID, API_KEY, ENV = 'dev', API_ORIGIN, onSaved, onError }) {
       return
     }
     const payload = {
-      aid: AID,
+      aid,
       contact_info: {},
       first_name: firstName,
       last_name: lastName,
@@ -105,7 +117,8 @@ function App({ AID, API_KEY, ENV = 'dev', API_ORIGIN, onSaved, onError }) {
 
   return <ThemeProvider theme={theme}>
     <CssBaseline />
-    <Box component="main" sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', p: { xs: 2, sm: 3 }, bgcolor: 'rgba(48, 67, 96, .62)' }}>
+    <Modal open={shouldShowModal} aria-labelledby="profile-title" disableEscapeKeyDown>
+      <Box component="main" sx={{ width: '100%', minHeight: '100%', display: 'grid', placeItems: 'center', overflowY: 'auto', p: { xs: 2, sm: 3 }, bgcolor: 'rgba(48, 67, 96, .62)' }}>
       <Paper component="section" elevation={0} aria-labelledby="profile-title" sx={{ width: 'min(100%, 650px)', p: { xs: '30px 24px 24px', sm: '38px 48px 32px' }, borderRadius: { xs: '22px', sm: '28px' }, boxShadow: '0 20px 40px rgba(15, 29, 54, .18)' }}>
         <Typography id="profile-title" component="h1" sx={{ color: '#122143', textAlign: 'center', fontSize: 24, lineHeight: '32px', fontWeight: 700, letterSpacing: '-.5px' }}>Complete your profile</Typography>
         <Box component="form" onSubmit={handleSubmit} noValidate>
@@ -122,7 +135,8 @@ function App({ AID, API_KEY, ENV = 'dev', API_ORIGIN, onSaved, onError }) {
           <Button type="submit" variant="contained" disabled={isSubmitting || Boolean(configError)} fullWidth sx={{ height: 56, mt: '32px', borderRadius: '12px', bgcolor: '#286dc7', boxShadow: '0 9px 16px rgba(40, 109, 199, .2)', fontSize: 14, lineHeight: '20px', fontWeight: 700, textTransform: 'none', '&:hover': { bgcolor: '#1e5fae' } }}>{isSubmitting ? 'Saving...' : 'Save & Continue →'}</Button>
         </Box>
       </Paper>
-    </Box>
+      </Box>
+    </Modal>
   </ThemeProvider>
 }
 
