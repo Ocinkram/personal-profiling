@@ -87,6 +87,12 @@
   cursor: pointer;
 }
 
+.profile-photo__camera svg {
+  width: 19px;
+  height: 19px;
+  fill: currentColor;
+}
+
 .profile-photo__upload {
   margin-top: 14px;
   padding: 0;
