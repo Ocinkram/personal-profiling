@@ -62,7 +62,13 @@ function App({ aid, apiKey, env = 'dev', apiOrigin, onSaved, onError, onClose, i
   async function handleSubmit(event) {
     event.preventDefault()
     if (configError) { setSubmitError(configError); return }
-    const payload = { aid, contact_info: {}, first_name: firstName, last_name: lastName, middle_name: ' ', other_info: { gender: '', civil_status: '', birthdate: '' }, profile: { profile: '' }, role: null, suffix: '' }
+    const trimmedFirstName = firstName.trim()
+    const trimmedLastName = lastName.trim()
+    if (!trimmedFirstName || !trimmedLastName) {
+      setSubmitError('First name and last name cannot be empty.')
+      return
+    }
+    const payload = { aid, contact_info: {}, first_name: trimmedFirstName, last_name: trimmedLastName, middle_name: ' ', other_info: { gender: '', civil_status: '', birthdate: '' }, profile: { profile: '' }, role: null, suffix: '' }
     setIsSubmitting(true); setSubmitError('')
     try {
       const response = await (hasProfile ? client.update(payload) : client.create(payload))

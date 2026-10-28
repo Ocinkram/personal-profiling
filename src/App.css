@@ -1,11 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Inter:wght@400;500;700&display=swap');
+
 .profile-modal {
   position: fixed;
   z-index: 1300;
   inset: 0;
   overflow: auto;
-  background: rgba(48, 67, 96, 0.62);
+  background: rgba(0, 0, 0, 0.5);
   color: #142343;
-  font-family: Inter, Arial, sans-serif;
+  font-family: Inter, sans-serif;
 }
 
 .profile-modal,
@@ -25,7 +27,7 @@
 }
 
 .profile-form {
-  width: min(100%, 650px);
+  width: min(100%, 420px);
   padding: 38px 48px 32px;
   border-radius: 28px;
   background: #fff;
@@ -36,6 +38,7 @@
   margin: 0 0 32px;
   color: #122143;
   text-align: center;
+  font-family: 'DM Sans', sans-serif;
   font-size: 24px;
   line-height: 32px;
   font-weight: 700;
@@ -137,7 +140,7 @@
   border: 1px solid #d8e2ef;
   border-radius: 12px;
   color: #284464;
-  font: 14px Inter, Arial, sans-serif;
+  font: 14px Inter, sans-serif;
   outline: none;
 }
 
@@ -167,7 +170,7 @@
   background: #286dc7;
   color: #fff;
   box-shadow: 0 9px 16px rgba(40, 109, 199, 0.2);
-  font: 700 14px Inter, Arial, sans-serif;
+  font: 700 14px Inter, sans-serif;
   cursor: pointer;
 }
 
