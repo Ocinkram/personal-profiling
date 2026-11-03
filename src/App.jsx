@@ -3,6 +3,17 @@ import './App.css'
 import './close.css'
 import { createProfileApiClient, validateProfileConfig } from './constants.jsx'
 
+function asObject(value, fallback = {}) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return value
+  if (typeof value !== 'string') return fallback
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : fallback
+  } catch {
+    return fallback
+  }
+}
+
 function App({ aid, apiKey, env = 'dev', apiOrigin, onSaved, onError, onClose, isOpen = true, isRequired = false }) {
   const [profileInfo, setProfileInfo] = useState(null)
   const [isReadComplete, setIsReadComplete] = useState(false)
@@ -68,7 +79,18 @@ function App({ aid, apiKey, env = 'dev', apiOrigin, onSaved, onError, onClose, i
       setSubmitError('First name and last name cannot be empty.')
       return
     }
-    const payload = { aid, contact_info: {}, first_name: trimmedFirstName, last_name: trimmedLastName, middle_name: ' ', other_info: { gender: '', civil_status: '', birthdate: '' }, profile: { profile: '' }, role: null, suffix: '' }
+    const payload = hasProfile
+      ? {
+          aid: profileInfo[0].aid ?? aid,
+          contact_info: asObject(profileInfo[0].contact_info),
+          first_name: trimmedFirstName,
+          last_name: trimmedLastName,
+          middle_name: profileInfo[0].middle_name ?? ' ',
+          other_info: asObject(profileInfo[0].other_info),
+          profile: asObject(profileInfo[0].profile),
+          suffix: profileInfo[0].suffix ?? ' ',
+        }
+      : { aid, contact_info: {}, first_name: trimmedFirstName, last_name: trimmedLastName, middle_name: ' ', other_info: { gender: '', civil_status: '', birthdate: '' }, profile: { profile: '' }, role: null, suffix: '' }
     setIsSubmitting(true); setSubmitError('')
     try {
       const response = await (hasProfile ? client.update(payload) : client.create(payload))
